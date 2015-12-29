@@ -1,10 +1,11 @@
 Package: wgee
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Small Sample Variance Estimators for Weighted GEE
 Version: 0.1
 Date: 2015-12-29
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Author: Bradley Saul <bradleysaul@gmail.com>
+Maintainer: Bradley Saul <bradleysaul@gmail.com>
+Description: Implements small sample sariance estimators for Weighted GEE
+Imports: geepack(>= 1.2-0)
 License: What license is it under?
 LazyData: TRUE
