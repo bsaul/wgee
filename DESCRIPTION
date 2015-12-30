@@ -6,6 +6,7 @@ Date: 2015-12-29
 Author: Bradley Saul <bradleysaul@gmail.com>
 Maintainer: Bradley Saul <bradleysaul@gmail.com>
 Description: Implements small sample sariance estimators for Weighted GEE
-Imports: geepack(>= 1.2-0)
+Imports: geepack(>= 1.2-0),
+  magrittr(>= 1.5)
 License: What license is it under?
 LazyData: TRUE
