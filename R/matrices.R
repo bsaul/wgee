@@ -88,23 +88,32 @@ U_standard <- function(parts){
 }
 
 
-#' Cluster-level KC-corrected U matrix
+#' Cluster-level MD-corrected U matrix
 #'
 #' Computes
-#' \deqn{ D_i^T V_^{-1} W_i r_i}
+#' \deqn{ D_i^T V_^{-1} (I_i - H_i)^{-1/1} W_i r_i}
 #'
-#' @param D matrix of derivatives of mean function
-#' @param V.inv inverse variance matrix
-#' @param W matrix of weight
-#' @param r matrix of residuals
+#' @param parts
+#'
+#' @export
+
+U_KC <- function(parts){
+  t(parts$Di) %*% parts$Vi.inv %*% wgee::sqrt_matrix(parts$Ii - parts$Hi) %*% parts$Wi %*% parts$ri
+}
+
+
+#' Cluster-level MD-corrected U matrix
+#'
+#' Computes
+#' \deqn{ D_i^T V_^{-1} (I_i - H_i)^{-1} W_i r_i}
+#'
+#' @param parts
 #'
 #' @export
 
 U_MD <- function(parts){
   t(parts$Di) %*% parts$Vi.inv %*% solve(parts$Ii - parts$Hi) %*% parts$Wi %*% parts$ri
 }
-
-
 
 #' Cluster-level H matrix
 #'
