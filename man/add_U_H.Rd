@@ -4,7 +4,7 @@
 \alias{add_U_H}
 \title{Appends a list of Ui and Hi matrices}
 \usage{
-add_U_H(matrix_list, bread)
+add_U_H(matrix_list, bread, Ufun = wgee::U_standard)
 }
 \arguments{
 \item{matrix_list}{}

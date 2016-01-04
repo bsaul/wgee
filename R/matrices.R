@@ -13,7 +13,8 @@ make_cluster_matrices <- function(df){
   list(ri = as.matrix(df$response - df$fitted),
        Di = as.matrix(df[, 4:ncol(df)]),
        Wi = diag(df$weights),
-       Vi.inv = diag(1, nrow = nrow(df), ncol = nrow(df)) )
+       Vi.inv = diag(1, nrow = nrow(df), ncol = nrow(df)),
+       Ii = diag(1, nrow = nrow(df), ncol = nrow(df)))
 }
 
 #' Cluster-level O matrix
@@ -27,7 +28,7 @@ make_cluster_matrices <- function(df){
 #'
 #' @export
 
-Oi_matrix <- function(D, W, V.inv){
+O_matrix <- function(D, W, V.inv){
   t(D) %*% V.inv %*% W %*% D
 }
 
@@ -65,8 +66,7 @@ summerizer <- function(matrix_list, geeglm_ingredients, solve = FALSE){
 #' @export
 
 bread <- function(matrix_list, geeglm_ingredients){
-
-  lapply(matrix_list, function(m) wgee::Oi_matrix(D = m$Di, W = m$Wi, V.inv = m$Vi.inv ) ) %>%
+  lapply(matrix_list, function(m) wgee::O_matrix(D = m$Di, W = m$Wi, V.inv = m$Vi.inv ) ) %>%
     summerizer(geeglm_ingredients, solve = TRUE)
 }
 
@@ -83,9 +83,27 @@ bread <- function(matrix_list, geeglm_ingredients){
 #'
 #' @export
 
-Ui_matrix <- function(D, V.inv, W, r){
-  t(D) %*% V.inv %*% W %*% r
+U_standard <- function(parts){
+  t(parts$Di) %*% parts$Vi.inv %*% parts$Wi %*% parts$ri
 }
+
+
+#' Cluster-level KC-corrected U matrix
+#'
+#' Computes
+#' \deqn{ D_i^T V_^{-1} W_i r_i}
+#'
+#' @param D matrix of derivatives of mean function
+#' @param V.inv inverse variance matrix
+#' @param W matrix of weight
+#' @param r matrix of residuals
+#'
+#' @export
+
+U_MD <- function(parts){
+  t(parts$Di) %*% parts$Vi.inv %*% solve(parts$Ii - parts$Hi) %*% parts$Wi %*% parts$ri
+}
+
 
 
 #' Cluster-level H matrix
@@ -101,7 +119,7 @@ Ui_matrix <- function(D, V.inv, W, r){
 #'
 #' @export
 
-Hi_matrix <- function(D, V.inv, bread){
+H_matrix <- function(D, V.inv, bread){
   D %*% bread %*% t(D) %*% V.inv
 }
 
@@ -112,11 +130,13 @@ Hi_matrix <- function(D, V.inv, bread){
 #'
 #' @export
 
-add_U_H <- function(matrix_list, bread){
+add_U_H <- function(matrix_list, bread, Ufun = wgee::U_standard){
   lapply(matrix_list, FUN = function(m) {
-    append(m, list(
-      Ui = wgee::Ui_matrix(D = m$Di, V.inv = m$Vi.inv, W = m$Wi, r = m$ri),
-      Hi = wgee::Hi_matrix(D = m$Di, V.inv = m$Vi.inv, bread) ) )
+    Hi = wgee::H_matrix(D = m$Di, V.inv = m$Vi.inv, bread)
+    m <- append(m, list(Hi = Hi))
+
+    Ui = Ufun(m)
+    append(m, list(Ui = Ui) )
   } )
 }
 
@@ -131,7 +151,37 @@ add_U_H <- function(matrix_list, bread){
 #' @export
 
 
-meat <- function(matrix_list, geeglm_ingredients){
+veggies <- function(matrix_list, geeglm_ingredients){
   lapply(matrix_list, function(m) m$Ui %*% t(m$Ui)) %>%
     summerizer(geeglm_ingredients, solve = FALSE)
+}
+
+#' Sandwich maker
+#'
+#' @param geeobj
+#' @param Ufun
+#'
+#' @export
+
+sandwich <- function(geeobj, Ufun = wgee::U_standard)
+{
+  # Step 0. Extract relevant ingredients from GEE object
+  step0 <- wgee::extract_geeglm(geeobj)
+
+  # Step 1. Extract or create r, D, W, V.inv, and I from GEE object
+  step1 <- lapply(split(step0$data, step0$id), wgee::make_cluster_matrices)
+
+  # Step 2. Compute the 'bread'
+  bread <- wgee::bread(step1, step0)
+
+  # Step 3. Compute U and H matrices
+  step3 <- wgee::add_U_H(step1, bread, Ufun)
+
+  # Step 4. Compute 'meat' of sandwich estimator
+  veggies <- wgee::veggies(step3, step0)
+
+  # Step 5. Compute sandwich estimator
+  sandwich <- bread %*% veggies %*% bread
+
+  return(sandwich)
 }
