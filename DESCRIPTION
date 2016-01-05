@@ -10,3 +10,5 @@ Imports: geepack(>= 1.2-0),
   magrittr(>= 1.5)
 License: What license is it under?
 LazyData: TRUE
+Suggests: testthat,
+  geesmv
