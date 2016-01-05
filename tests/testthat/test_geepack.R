@@ -3,7 +3,6 @@ library(geesmv)
 
 data("ohio")
 
-
 #-----------------------------------------------------------------------------------#
 # Gaussian with identity link
 #-----------------------------------------------------------------------------------#
@@ -25,7 +24,6 @@ wgeefit_kc <- wgee::geeglm_w(resp ~ age, family = gaussian, data = ohio, id = id
 test_that("wgee returns same coefficients and standard errors as geepack when no correction used", {
   expect_equal(summary(geefit)$coefficients, summary(wgeefit_none)$coefficients)
 })
-
 
 test_that("wgee returns same covariance matrix as geesmv when MD correction used ", {
   test1 <- geesmv_md$cov.beta
